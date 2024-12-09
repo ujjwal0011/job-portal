@@ -2,7 +2,7 @@ import { catchAsyncErrors } from "../middlewares/catchAsyncError.js";
 import ErrorHandler from "../middlewares/error.js";
 import { User } from "../models/userSchema.js";
 import { v2 as cloudinary } from "cloudinary";
-import { sendToken } from '../utils/jwtToken.js';
+import { sendToken } from "../utils/jwtToken.js";
 
 export const register = catchAsyncErrors(async (req, res, next) => {
   try {
@@ -51,7 +51,7 @@ export const register = catchAsyncErrors(async (req, res, next) => {
 
     if (req.files && req.files.resume) {
       const { resume } = req.files;
-      
+
       if (resume) {
         try {
           const cloudinaryResponse = await cloudinary.uploader.upload(
@@ -69,7 +69,6 @@ export const register = catchAsyncErrors(async (req, res, next) => {
             public_id: cloudinaryResponse.public_id,
             url: cloudinaryResponse.secure_url,
           };
-
         } catch (error) {
           return next(new ErrorHandler("Failed to upload resume", 500));
         }
@@ -83,3 +82,50 @@ export const register = catchAsyncErrors(async (req, res, next) => {
   }
 });
 
+export const login = catchAsyncErrors(async (req, res, next) => {
+  const { role, email, password } = req.body;
+  if (!role || !email || !password) {
+    return next(
+      new ErrorHandler("Role, email and password are required.", 400)
+    );
+  }
+
+  const user = await User.findOne({ email }).select("+password");
+
+  if (!user) {
+    return next(new ErrorHandler("Invalid credentials.", 401));
+  }
+
+  const isPasswordMatched = await user.comparePassword(password);
+
+  if (!isPasswordMatched) {
+    return next(new ErrorHandler("Invalid credentials.", 401));
+  }
+
+  if (user.role !== role) {
+    return next(new ErrorHandler("Unauthorized access.", 403));
+  }
+
+  sendToken(user, 200, res, "User Logged In.");
+});
+
+export const logout = catchAsyncErrors(async (req, res, next) => {
+  res
+    .status(200)
+    .cookie("token", "", {
+      expires: new Date(Date.now()),
+      httpOnly: true,
+    })
+    .json({
+      success: true,
+      message: "Logged out successfully.",
+    });
+});
+
+export const getUser = catchAsyncErrors(async (req, res, next) => {
+  const user = req.user;
+  res.status(200).json({
+    success: true,
+    user,
+  });
+});
