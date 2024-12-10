@@ -129,3 +129,77 @@ export const getUser = catchAsyncErrors(async (req, res, next) => {
     user,
   });
 });
+
+export const updateProfile = catchAsyncErrors(async (req, res, next) => {
+  const newUserData = {
+    name: req.body.name,
+    email: req.body.email,
+    phone: req.body.phone,
+    address: req.body.address,
+    coverLetter: req.body.coverLetter,
+    niches: {
+      firstNiche: req.body.firstNiche,
+      secondNiche: req.body.secondNiche,
+      thirdNiche: req.body.thirdNiche,
+    },
+  };
+  const { firstNiche, secondNiche, thirdNiche } = newUserData.niches;
+
+  if (
+    req.user.role === "Job Seeker" &&
+    (!firstNiche || !secondNiche || !thirdNiche)
+  ) {
+    return next(
+      new ErrorHandler("Niche fields are required for Job Seeker role.", 400)
+    );
+  }
+
+  if (req.files) {
+    const resume = req.files.resume;
+    if (resume) {
+      const currentResumeId = req.user.resume.public_id;
+      if (currentResumeId) {
+        await cloudinary.uploader.destroy(currentResumeId);
+      }
+      const newResume = await cloudinary.uploader.upload(resume.tempFilePath, {
+        folder: "job_seekers_resume",
+      });
+      newUserData.resume = {
+        public_id: newResume.public_id,
+        url: newResume.secure_url,
+      };
+    }
+  }
+
+  const user = await User.findByIdAndUpdate(req.user.id, newUserData, {
+    new: true,
+    runValidators: true,
+    useFindAndModify: false,
+  });
+
+  res.status(200).json({
+    success: true,
+    user,
+    message: "Profile updated successfully.",
+  });
+});
+
+export const updatePassword = catchAsyncErrors(async (req, res, next) => {
+  const user = await User.findById(req.user.id).select("+password");
+
+  const isPasswordMatched = await user.comparePassword(req.body.oldPassword);
+
+  if (!isPasswordMatched) {
+    return next(new ErrorHandler("Old password is incorrect.", 401));
+  }
+
+  if (req.body.newPassword !== req.body.confirmPassword) {
+    return next(
+      new ErrorHandler("New password and confirm password do not match.", 400)
+    );
+  }
+
+  user.password = req.body.newPassword;
+  await user.save();
+  sendToken(user, 200, res, "Password updated successfully.");
+});
