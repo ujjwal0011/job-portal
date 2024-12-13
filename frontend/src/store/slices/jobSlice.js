@@ -141,6 +141,20 @@ export const fetchJobs =
     }
   };
 
+export const fetchSingleJob = (jobId) => async (dispatch) => {
+  dispatch(jobSlice.actions.requestForSingleJob());
+  try {
+    const response = await axios.get(
+      `http://localhost:4000/api/v1/job/get/${jobId}`,
+      { withCredentials: true }
+    );
+    dispatch(jobSlice.actions.successForSingleJob(response.data.job));
+    dispatch(jobSlice.actions.clearAllErrors());
+  } catch (error) {
+    dispatch(jobSlice.actions.failureForSingleJob(error.response.data.message));
+  }
+};
+
 export const clearAllJobErrors = () => (dispatch) => {
   dispatch(jobSlice.actions.clearAllErrors());
 };
