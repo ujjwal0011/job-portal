@@ -15,12 +15,20 @@ function Jobs() {
   const { jobs, loading, error } = useSelector((state) => state.jobs);
 
   const handleCityChange = (city) => {
-    setCity(city);
+    if (city === "All") {
+      setCity("");
+    } else {
+      setCity(city);
+    }
     setSelectedCity(city);
   };
 
   const handleNicheChange = (niche) => {
-    setNiche(niche);
+    if (niche === "All") {
+      setNiche("");
+    } else {
+      setNiche(niche);
+    }
     setSelectedNiche(niche);
   };
 

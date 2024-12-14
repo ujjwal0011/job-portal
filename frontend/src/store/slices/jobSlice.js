@@ -155,6 +155,49 @@ export const fetchSingleJob = (jobId) => async (dispatch) => {
   }
 };
 
+export const postJob = (data) => async (dispatch) => {
+  dispatch(jobSlice.actions.requestForPostJob());
+  try {
+    const response = await axios.post(
+      `http://localhost:4000/api/v1/job/post`,
+      data,
+      { withCredentials: true, headers: { "Content-Type": "application/json" } }
+    );
+    dispatch(jobSlice.actions.successForPostJob(response.data.message));
+    dispatch(jobSlice.actions.clearAllErrors());
+  } catch (error) {
+    dispatch(jobSlice.actions.failureForPostJob(error.response.data.message));
+  }
+};
+
+export const getMyJobs = () => async (dispatch) => {
+  dispatch(jobSlice.actions.requestForMyJobs());
+  try {
+    const response = await axios.get(
+      `http://localhost:4000/api/v1/job/getmyjobs`,
+      { withCredentials: true }
+    );
+    dispatch(jobSlice.actions.successForMyJobs(response.data.myJobs));
+    dispatch(jobSlice.actions.clearAllErrors());
+  } catch (error) {
+    dispatch(jobSlice.actions.failureForMyJobs(error.response.data.message));
+  }
+};
+
+export const deleteJob = (id) => async (dispatch) => {
+  dispatch(jobSlice.actions.requestForDeleteJob());
+  try {
+    const response = await axios.delete(
+      `http://localhost:4000/api/v1/job/delete/${id}`,
+      { withCredentials: true }
+    );
+    dispatch(jobSlice.actions.successForDeleteJob(response.data.message));
+    dispatch(clearAllJobErrors());
+  } catch (error) {
+    dispatch(jobSlice.actions.failureForDeleteJob(error.response.data.message));
+  }
+};
+
 export const clearAllJobErrors = () => (dispatch) => {
   dispatch(jobSlice.actions.clearAllErrors());
 };
